@@ -93,13 +93,17 @@ int getCurrentTimeInMills() {
 /**********************************************************************************/
 
 // Function to receive the request from the client and add to the queue
+// Dispatcher threads are expected to be blocked at accept_connection until a new request is fired. 
 void * dispatch(void *arg) {
 
   while (1) {
 
-    // Accept client connection
+    //Modifying parameters later - C.P. 
 
+    // Accept client connection
+	accept_connection(void);* //added by C.P.
     // Get request from the client
+	get_request(int fd,char *filename); //added by C.P.
 
     // Add the request into the queue
 
@@ -114,17 +118,32 @@ void * worker(void *arg) {
 
    while (1) {
 
-    // Start recording time
+	time_t start_time, end_time;
+	double time_taken;
+
+    // Start recording time, added by C.P.
+	if((start_time=time(NULL))==((time_t)-1)){ 
+		start_time=-1;
+	}
 
     // Get the request from the queue
 
     // Get the data from the disk or the cache
 
-    // Stop recording the time
+    // Stop recording the time, added by C.P.
+	if((end_time=time(NULL))==((time_t)-1)){
+		end_time=-1;
+	}
+
+	//total time taken to get request and data, added by C.P.
+	time_taken=difftime(start_time,end_time);
 
     // Log the request into the file and terminal
 
-    // return the result
+    // return the result (modify parameters later)
+	if(return_result(int fd, char *content_type, char *buf, int numbytes))!=0){
+		return_error(int fd, char *buf);
+	} // added by C.P.
   }
   return NULL;
 }
@@ -139,10 +158,36 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  // Get the input args
+  int port, num_dispatcher, num_workers, dynamic_flag /* Is dynamic flag an int?*/, queue_length, cache_size;//added by C.P.
+  char *path;//or of type void?
+  
 
-  // Perform error checks on the input arguments
+  // Get the input args (added by C.P.)
+	port=argv[1];
+	path=argv[2];
+	num_dispatcher=argv[3];
+	num_workers=argv[4];
+	dynamic_flag=argv[5];
+	queue_length=argv[6];
+	cache_size=argv[7];
 
+  // Perform error checks on the input arguments (added by C.P.)
+	if((port<1024)||(port==9000)||(port>65536)){
+		printf("Please pick a random port number other than 9000 from (1024 to 65536)");
+		return -1;
+	}
+	//Here, check is path is a valid path / file
+
+	if((num_dispatcher>MAX_THREADS)||(num_dispatcher<=0)){
+		printf("Invalid dispatcher thread number. Please pick a number between 1 and 100")'
+		return -1;
+	}
+	if((num_workers>MAX_THREADS)||(num_workers<=0)){
+		printf("Invalid worker thread number. Please pick a number between 1 and 100")'
+		return -1;
+	}
+	
+	
   // Change the current working directory to server root directory
 
   // Start the server and initialize cache

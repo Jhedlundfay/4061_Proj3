@@ -66,6 +66,9 @@ void deleteCache(){
 // Function to initialize the cache
 void initCache(){
   // Allocating memory and initializing the cache array
+  cache_entry_t cache;
+  cache = malloc(cache_size * sizeof(cache_entry_t));
+
 }
 
 // Function to open and read the file from the disk into the memory
@@ -193,6 +196,17 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
+  // Change the current working directory to server root directory-----------------
+
+  if(chdir(path) == -1){
+    printf("Invalid path: %s", path);
+    exit(1);
+  }
+
+  // Start the server and initialize cache-----------------------------------------
+  initCache()
+
+
   // setting up the threads --------------------------------------------------------
 
   pthread_t worker_pool[num_workers];
@@ -225,7 +239,7 @@ int main(int argc, char **argv) {
 
 
 
-  // Change the current working directory to server root directory
+
 
   // Start the server and initialize cache
 

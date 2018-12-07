@@ -116,21 +116,36 @@ void * dispatch(void *arg) {
     //Modifying parameters later - C.P.
 
     // Accept client connection
+  int connection_fd;
+  char filename[BUFF_SIZE];
+
   if(pthread_mutex_lock(&lock) == -1){
     printf("Failed to lock thread before accept_connection() call");
     exit(1);
   }
 
-	accept_connection(void);* //added by C.P.
+	connection_fd = accept_connection(void); //added by C.P.
 
   if(pthread_mutex_unlock(&lock) == -1){
     printf("Failed to unlock thread after accept_connection() call");
     exit(1);
   }
     // Get request from the client
-	get_request(int fd,char *filename); //added by C.P.
+  if(connection_fd >= 0){
 
-    // Add the request into the queue
+	 if(get_request(connection_fd,&filename)!=0){
+     printf("Error get request from fd: %d",connection_fd);
+   }
+   else{
+     //filename now contains name of file
+     // Add the request into the queue
+
+   }
+
+   
+
+  }
+
 
    }
    return NULL;

@@ -306,7 +306,7 @@ int return_error(int fd, char *buf) {
          close(fd);
          return -3;
       }
-   
+
       if (fflush(stream) < 0) {
    	   printf("Failed to flush stream.\n");
          close(fd);

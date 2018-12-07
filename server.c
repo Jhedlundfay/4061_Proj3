@@ -23,6 +23,8 @@
 */
 
 // structs:
+
+
 typedef struct request_queue {
    int fd;
    void *request;
@@ -33,6 +35,7 @@ typedef struct cache_entry {
     char *request;
     char *content;
 } cache_entry_t;
+
 
 /* ************************ Dynamic Pool Code ***********************************/
 // Extra Credit: This function implements the policy to change the worker thread pool dynamically
@@ -50,6 +53,14 @@ void * dynamic_pool_size_update(void *arg) {
 // Function to check whether the given request is present in cache
 int getCacheIndex(char *request){
   /// return the index if the request is present in the cache
+  for(int i = 0; i< cache_size ;i++){
+    if(strcmp(request,cache[i].request)){
+      return i;
+    }
+  }
+
+  return -1
+
 }
 
 // Function to add the request and its file content into the cache
@@ -65,9 +76,10 @@ void deleteCache(){
 
 // Function to initialize the cache
 void initCache(){
+
   // Allocating memory and initializing the cache array
-  cache_entry_t cache;
-  cache = malloc(cache_size * sizeof(cache_entry_t));
+  cache_entry_t cache[cache_size];
+  memset(cache,0,cache_size * sizeof(cache_entry_t));
 
 }
 
@@ -104,7 +116,17 @@ void * dispatch(void *arg) {
     //Modifying parameters later - C.P.
 
     // Accept client connection
+  if(pthread_mutex_lock(&lock) == -1){
+    printf("Failed to lock thread before accept_connection() call");
+    exit(1);
+  }
+
 	accept_connection(void);* //added by C.P.
+
+  if(pthread_mutex_unlock(&lock) == -1){
+    printf("Failed to unlock thread after accept_connection() call");
+    exit(1);
+  }
     // Get request from the client
 	get_request(int fd,char *filename); //added by C.P.
 
@@ -176,7 +198,7 @@ int main(int argc, char **argv) {
 
 
 
-  init(port); //first and last call to port. Will call exit() if fails to initialize port number
+
 
 
 
@@ -204,10 +226,12 @@ int main(int argc, char **argv) {
   }
 
   // Start the server and initialize cache-----------------------------------------
-  initCache()
+
+  init(port);
+  initCache();
 
 
-  // setting up the threads --------------------------------------------------------
+  // setting up the threads -------------------------------------------------------
 
   pthread_t worker_pool[num_workers];
   pthread_t dispatcher_pool[num_dispatcher];
@@ -220,7 +244,7 @@ int main(int argc, char **argv) {
    }
 
 
-  // creating worker and dispatcher threads ----------------
+  // creating worker and dispatcher threads ---------------------------------------
 
   for(i = 0 ; i < num_workers; i++ ){
       if(pthread_create(worker_pool[i],NULL,worker,NULL)){
@@ -231,20 +255,12 @@ int main(int argc, char **argv) {
 
   for(i = 0 ; i < num_dispatcher; i++ ){
       if(pthread_create(dispatcher_pool[i],NULL,dispatch,NULL)){
-        perror("Error creating  thread");
+        perror("Error creating dispatcher thread");
         exit(1);
       }
 
+  // Clean up ---------------------------------------------------------------------
 
 
-
-
-
-
-  // Start the server and initialize cache
-
-  // Create dispatcher and worker threads
-
-  // Clean up
   return 0;
 }

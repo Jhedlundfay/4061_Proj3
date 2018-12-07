@@ -93,12 +93,12 @@ int getCurrentTimeInMills() {
 /**********************************************************************************/
 
 // Function to receive the request from the client and add to the queue
-// Dispatcher threads are expected to be blocked at accept_connection until a new request is fired. 
+// Dispatcher threads are expected to be blocked at accept_connection until a new request is fired.
 void * dispatch(void *arg) {
 
   while (1) {
 
-    //Modifying parameters later - C.P. 
+    //Modifying parameters later - C.P.
 
     // Accept client connection
 	accept_connection(void);* //added by C.P.
@@ -116,13 +116,13 @@ void * dispatch(void *arg) {
 // Function to retrieve the request from the queue, process it and then return a result to the client
 void * worker(void *arg) {
 
-   while (1) {
+  while (1) {
 
 	time_t start_time, end_time;
 	double time_taken;
 
     // Start recording time, added by C.P.
-	if((start_time=time(NULL))==((time_t)-1)){ 
+	if((start_time=time(NULL))==((time_t)-1)){
 		start_time=-1;
 	}
 
@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
 
   int port, num_dispatcher, num_workers, dynamic_flag /* Is dynamic flag an int?*/, queue_length, cache_size;//added by C.P.
   char *path;//or of type void?
-  
+
 
   // Get the input args (added by C.P.)
 	port=argv[1];
@@ -171,6 +171,12 @@ int main(int argc, char **argv) {
 	queue_length=argv[6];
 	cache_size=argv[7];
 
+
+
+  init(port); //first and last call to port. Will call exit() if fails to initialize port number
+
+
+
   // Perform error checks on the input arguments (added by C.P.)
 	if((port<1024)||(port==9000)||(port>65536)){
 		printf("Please pick a random port number other than 9000 from (1024 to 65536)");
@@ -179,15 +185,46 @@ int main(int argc, char **argv) {
 	//Here, check is path is a valid path / file
 
 	if((num_dispatcher>MAX_THREADS)||(num_dispatcher<=0)){
-		printf("Invalid dispatcher thread number. Please pick a number between 1 and 100")'
+		printf("Invalid dispatcher thread number. Please pick a number between 1 and 100")
 		return -1;
 	}
 	if((num_workers>MAX_THREADS)||(num_workers<=0)){
-		printf("Invalid worker thread number. Please pick a number between 1 and 100")'
+		printf("Invalid worker thread number. Please pick a number between 1 and 100")
 		return -1;
 	}
-	
-	
+
+  // setting up the threads --------------------------------------------------------
+
+  pthread_t worker_pool[num_workers];
+  pthread_t dispatcher_pool[num_dispatcher];
+
+
+
+  if(pthread_mutex_init(&lock,NULL)!=0){
+     perror("Failed to mutex init")
+     exit(1);
+   }
+
+
+  // creating worker and dispatcher threads ----------------
+
+  for(i = 0 ; i < num_workers; i++ ){
+      if(pthread_create(worker_pool[i],NULL,worker,NULL)){
+        perror("Error creating worker thread");
+        exit(1);
+      }
+
+
+  for(i = 0 ; i < num_dispatcher; i++ ){
+      if(pthread_create(dispatcher_pool[i],NULL,dispatch,NULL)){
+        perror("Error creating  thread");
+        exit(1);
+      }
+
+
+
+
+
   // Change the current working directory to server root directory
 
   // Start the server and initialize cache

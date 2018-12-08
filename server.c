@@ -63,6 +63,21 @@ int getCacheIndex(char *request){
 
 }
 
+// Function to lock a given mutex
+void lock(pthread_mutext_t *mutex) {
+  int error;
+  if (error = pthread_mutex_lock(mutex)) {
+    fprintf(stderr, "Failed to lock mutex.\n", strerror(error));
+  }
+}
+
+void unlock(pthread_mutex_t *mutex) {
+  int error;
+  if (error = pthread_mutex_unlock(mutex)) {
+    fprintf(stderr, "Failed to unlock mutex.\n", strerror(error));
+  }
+}
+
 // Function to add the request and its file content into the cache
 void addIntoCache(char *mybuf, char *memory , int memory_size){
   // It should add the request at an index according to the cache replacement policy
@@ -71,6 +86,11 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
 
 // clear the memory allocated to the cache
 void deleteCache(){
+  for (int i = 0; i < cache_size; i++) {
+    free(cache[i].content);
+    free(cache[i].request);
+  }
+  free(cache);
   // De-allocate/free the cache memory
 }
 

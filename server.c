@@ -23,13 +23,27 @@
 */
 
 // structs:
+struct request_node
+{
+    int fd;
+    char *filename;
+    struct node *next;
+};
+typedef struct node node;
 
+struct queue
+{
+    int count;
+    node *front;
+    node *rear;
+};
+typedef struct queue queue;
 
-typedef struct request_queue {
+/*typedef struct request_queue {
    int fd;
-   void *request;
+   void *request-;
 } request_t;
-
+*/
 typedef struct cache_entry {
     int len;
     char *request;
@@ -70,12 +84,19 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
 }
 
 // clear the memory allocated to the cache
-void deleteCache(){
-  // De-allocate/free the cache memory
+void deleteCache(char *cache){
+  free(cache);
 }
 
 // Function to initialize the cache
-void initCache(){
+void initQueue(queue *q)
+{
+    q->count = 0;
+    q->front = NULL;
+    q->rear = NULL;
+}
+
+void initCache(char *cache){
 
   // Allocating memory and initializing the cache array
   cache_entry_t cache[cache_size];
@@ -83,6 +104,36 @@ void initCache(){
 
 }
 
+void enqueue(queue *q,char *name, int descriptor, void *req)
+{
+    node *tmp;
+    tmp = malloc(sizeof(node));
+    tmp->fd = descriptor;
+    tmp->filename = filename;
+    tmp->request =req;
+    tmp->next = NULL;
+    if(!isempty(q))
+    {
+        q->rear->next = tmp;
+        q->rear = tmp;
+    }
+    else
+    {
+        q->front = q->rear = tmp;
+    }
+    q->count++;
+}
+
+node* dequeue(queue *q)
+{
+    node *tmp;
+    int n = q->front->data;
+    tmp = q->front;
+    q->front = q->front->next;
+    q->count--;
+    //free(tmp);
+    return tmp;
+}
 // Function to open and read the file from the disk into the memory
 // Add necessary arguments as needed
 int readFromDisk(/*necessary arguments*/) {
@@ -109,7 +160,7 @@ int getCurrentTimeInMills() {
 
 // Function to receive the request from the client and add to the queue
 // Dispatcher threads are expected to be blocked at accept_connection until a new request is fired.
-void * dispatch(void *arg) {
+void * dispatch(queue *request_queue,int queue_length) {
 
   while (1) {
 
@@ -124,7 +175,7 @@ void * dispatch(void *arg) {
     exit(1);
   }
 
-	connection_fd = accept_connection(void); //added by C.P.
+	  connection_fd = accept_connection(void); //added by C.P.
 
   if(pthread_mutex_unlock(&lock) == -1){
     printf("Failed to unlock thread after accept_connection() call");
@@ -137,12 +188,19 @@ void * dispatch(void *arg) {
      printf("Error get request from fd: %d",connection_fd);
    }
    else{
+        //check if queue is full
+        if(request_queue.count < queue_length)
+
+            enqueue(request_queue,connection_fd,filename)
+        else{
+          // QUEUE REPLACEMENT POLICY HANDLED HERE
+        }
      //filename now contains name of file
      // Add the request into the queue
 
    }
 
-   
+
 
   }
 
@@ -240,10 +298,17 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  // Start the server and initialize cache-----------------------------------------
+  // Start the server and initialize cache and queue-----------------------------------------
 
+  //init server and cache
   init(port);
-  initCache();
+  cache_entry_t cache[cache_size];
+  initCache(cache);
+
+  // initialize queue
+  queue *request_queue;
+  request_queue = malloc(sizeof(queue));
+  initQueue(request_queue);
 
 
   // setting up the threads -------------------------------------------------------

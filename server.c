@@ -65,10 +65,10 @@ void * dynamic_pool_size_update(void *arg) {
 /* ************************************ Cache Code ********************************/
 
 // Function to check whether the given request is present in cache
-int getCacheIndex(char *request){
+int getCacheIndex(char *filename,cache_entry_t * cache){
   /// return the index if the request is present in the cache
   for(int i = 0; i< cache_size ;i++){
-    if(strcmp(request,cache[i].request)){
+    if(strcmp(filename,cache[i].filename)){
       return i;
     }
   }
@@ -110,7 +110,6 @@ void enqueue(queue *q,char *name, int descriptor, void *req)
     tmp = malloc(sizeof(node));
     tmp->fd = descriptor;
     tmp->filename = filename;
-    tmp->request =req;
     tmp->next = NULL;
     if(!isempty(q))
     {
@@ -184,8 +183,8 @@ void * dispatch(queue *request_queue,int queue_length) {
     // Get request from the client
   if(connection_fd >= 0){
 
-	 if(get_request(connection_fd,&filename)!=0){
-     printf("Error get request from fd: %d",connection_fd);
+	 if(get_request(connection_fd,filename)!=0){
+     printf("Error getting request from fd: %d",connection_fd);
    }
    else{
         //check if queue is full
@@ -193,7 +192,7 @@ void * dispatch(queue *request_queue,int queue_length) {
 
             enqueue(request_queue,connection_fd,filename)
         else{
-          // QUEUE REPLACEMENT POLICY HANDLED HERE
+                 // QUEUE REPLACEMENT POLICY HANDLED HERE
         }
      //filename now contains name of file
      // Add the request into the queue
@@ -209,15 +208,21 @@ void * dispatch(queue *request_queue,int queue_length) {
    return NULL;
 }
 
+
 /**********************************************************************************/
 
 // Function to retrieve the request from the queue, process it and then return a result to the client
-void * worker(void *arg) {
+void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
 
   while (1) {
 
 	time_t start_time, end_time;
 	double time_taken;
+
+  char content_type[BUFF_SIZE];
+  char content_buffer[BUFF_SIZE];
+  node request;
+  int index;
 
     // Start recording time, added by C.P.
 	if((start_time=time(NULL))==((time_t)-1)){
@@ -226,7 +231,33 @@ void * worker(void *arg) {
 
     // Get the request from the queue
 
-    // Get the data from the disk or the cache
+
+    request = dequeue(request_queue)
+    index = getCacheIndex(request.filename,cache,cache_size);
+
+    int getCacheIndex(char *request){
+      /// return the index if the request is present in the cache
+      for(int i = 0; i< cache_size ;i++){
+        if(strcmp(filename,cache[i].filename)){
+          return i;
+        }
+      }
+
+      return -1
+
+    }
+
+
+    if(index == -1){
+      // request is not in cache
+      // read from file and put into cache
+    }
+    else{
+      //request is in the cache
+      //get contents from cache index and return
+    }
+
+
 
     // Stop recording the time, added by C.P.
 	if((end_time=time(NULL))==((time_t)-1)){

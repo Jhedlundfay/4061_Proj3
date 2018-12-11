@@ -131,12 +131,24 @@ node* dequeue(queue *q)
     tmp = q->front;
     q->front = q->front->next;
     q->count--;
+
     //free(tmp);
     return tmp;
 }
 // Function to open and read the file from the disk into the memory
 // Add necessary arguments as needed
-int readFromDisk(/*necessary arguments*/) {
+int readFromDisk(char *content_buffer,char *filename) {
+
+  FILE *file = fopen(filename, "r");
+
+  if(file != NULL){
+
+    while((file_data = getc(fp)) != EOF)
+    {
+        strcat(content_buffer, &file_data);
+    }
+    fclose(file);
+}
   // Open and read the contents of file given the request
 }
 
@@ -164,48 +176,45 @@ void * dispatch(queue *request_queue,int queue_length) {
 
   while (1) {
 
-    //Modifying parameters later - C.P.
-
-    // Accept client connection
   int connection_fd;
+  node *replace;
   char filename[BUFF_SIZE];
 
   if(pthread_mutex_lock(&lock) == -1){
     printf("Failed to lock thread before accept_connection() call");
-    exit(1);
+    continue;
   }
 
 	  connection_fd = accept_connection(void); //added by C.P.
 
   if(pthread_mutex_unlock(&lock) == -1){
     printf("Failed to unlock thread after accept_connection() call");
-    exit(1);
+    continue;
   }
     // Get request from the client
   if(connection_fd >= 0){
 
 	 if(get_request(connection_fd,filename)!=0){
      printf("Error getting request from fd: %d",connection_fd);
+     continue;
    }
    else{
-        //check if queue is full
-        if(request_queue.count < queue_length)
-
+        if(request_queue.count < queue_length){   //check if queue is full
             enqueue(request_queue,connection_fd,filename)
+          }
         else{
-                 // QUEUE REPLACEMENT POLICY HANDLED HERE
-        }
-     //filename now contains name of file
-     // Add the request into the queue
-
-   }
-
-
-
+            replace = dequeue(request_queue);
+            free(replace);
+            enqueue(request_queue,connection_fd,filename)
+            }
+       }
+  }
+  else{
+    perror("Accept connection returned negative file descriptor (dispacther)");
+    continue;
   }
 
-
-   }
+}
    return NULL;
 }
 
@@ -217,61 +226,62 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
 
   while (1) {
 
-	time_t start_time, end_time;
-	double time_taken;
+  	time_t start_time, end_time;
+  	double time_taken;
 
-  char content_type[BUFF_SIZE];
-  char content_buffer[BUFF_SIZE];
-  cache_entry_t cache_entry;
-  node request;
-  int bytesread;
-  int index;
+    char content_type[BUFF_SIZE];
+    char content_buffer[BUFF_SIZE];
+    cache_entry_t cache_entry;
+    node request;
 
-    // Start recording time, added by C.P.
-	if((start_time=time(NULL))==((time_t)-1)){
-		start_time=-1;
-	}
+    int bytesread;
+    int index;
 
-    // Get the request from the queue
+      // Start recording time, added by C.P.
+  	if((start_time=time(NULL))==((time_t)-1)){
+  		start_time=-1;
+  	}
 
+      // Get the request from the queue
+      request = dequeue(request_queue)
 
-    request = dequeue(request_queue)
-    index = getCacheIndex(request.filename,cache,cache_size);
-
-
-    if(index == -1){
-        while(bytesread = read(request.fd,content_buffer,BUFF_SIZE) > 0){
-
-        }
-
-        if //use a pointer to keep track where we are in the cache. if pointer is at last index. go to front and replace LIFO
-          //use cache[i].status to check if spot is occupied
-
-      //after read from file, make cache entry. Use replacement policy if cache is full
-    }
-    else{
-
-      cache_entry = cache[index]
-      //request is in the cache
-      //get contents from cache index and return
-    }
+      if(request == NULL){ //no request in queue so continue to next iteration
+        continue;
+      }
 
 
+    if((index = getCacheIndex(request.filename,cache,cache_size)) == -1){
 
-    // Stop recording the time, added by C.P.
-	if((end_time=time(NULL))==((time_t)-1)){
-		end_time=-1;
-	}
+          readFromDisk(content_buffer,request.fd);
 
-	//total time taken to get request and data, added by C.P.
-	time_taken=difftime(start_time,end_time);
+          if //use a pointer to keep track where we are in the cache. if pointer is at last index. go to front and replace LIFO
+            //use cache[i].status to check if spot is occupied
 
-    // Log the request into the file and terminal
+        //after read from file, make cache entry. Use replacement policy if cache is full
+      }
+      else{
 
-    // return the result (modify parameters later)
-	if(return_result(int fd, char *content_type, char *buf, int numbytes))!=0){
-		return_error(int fd, char *buf);
-	} // added by C.P.
+        cache_entry = cache[index]
+        //request is in the cache
+        //get contents from cache index and return
+      }
+
+
+
+      // Stop recording the time, added by C.P.
+  	if((end_time=time(NULL))==((time_t)-1)){
+  		end_time=-1;
+  	}
+
+  	//total time taken to get request and data, added by C.P.
+  	time_taken=difftime(start_time,end_time);
+
+      // Log the request into the file and terminal
+
+      // return the result (modify parameters later)
+  	if(return_result(int fd, char *content_type, char *buf, int numbytes))!=0){
+  		return_error(int fd, char *buf);
+  	} // added by C.P.
   }
   return NULL;
 }

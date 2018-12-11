@@ -48,6 +48,7 @@ typedef struct cache_entry {
     int len;
     char *request;
     char *content;
+    int status;
 } cache_entry_t;
 
 
@@ -221,7 +222,9 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
 
   char content_type[BUFF_SIZE];
   char content_buffer[BUFF_SIZE];
+  cache_entry_t cache_entry;
   node request;
+  int bytesread;
   int index;
 
     // Start recording time, added by C.P.
@@ -235,24 +238,20 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
     request = dequeue(request_queue)
     index = getCacheIndex(request.filename,cache,cache_size);
 
-    int getCacheIndex(char *request){
-      /// return the index if the request is present in the cache
-      for(int i = 0; i< cache_size ;i++){
-        if(strcmp(filename,cache[i].filename)){
-          return i;
-        }
-      }
-
-      return -1
-
-    }
-
 
     if(index == -1){
-      // request is not in cache
-      // read from file and put into cache
+        while(bytesread = read(request.fd,content_buffer,BUFF_SIZE) > 0){
+
+        }
+
+        if //use a pointer to keep track where we are in the cache. if pointer is at last index. go to front and replace LIFO
+          //use cache[i].status to check if spot is occupied
+
+      //after read from file, make cache entry. Use replacement policy if cache is full
     }
     else{
+
+      cache_entry = cache[index]
       //request is in the cache
       //get contents from cache index and return
     }

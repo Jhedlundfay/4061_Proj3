@@ -45,9 +45,10 @@ typedef struct queue queue;
 } request_t;
 */
 typedef struct cache_entry {
-    int len;
-    char *request;
+    char *filename;
+    int bytes;
     char *content;
+    char *content_type;
     int status;
 } cache_entry_t;
 
@@ -61,9 +62,41 @@ void * dynamic_pool_size_update(void *arg) {
     // Increase / decrease dynamically based on your policy
   }
 }
+
+
 /**********************************************************************************/
 
 /* ************************************ Cache Code ********************************/
+
+void enqueue(queue *q,char *name, int descriptor, void *req)
+{
+    node *tmp;
+    tmp = malloc(sizeof(node));
+    tmp->fd = descriptor;
+    tmp->filename = name;
+    tmp->next = NULL;
+    if(!isempty(q))
+    {
+        q->rear->next = tmp;
+        q->rear = tmp;
+    }
+    else
+    {
+        q->front = q->rear = tmp;
+    }
+    q->count++;
+}
+
+node* dequeue(queue *q)
+{
+    node *tmp;
+    int n = q->front->data;
+    tmp = q->front;
+    q->front = q->front->next;
+    q->count--;
+    return tmp;
+}
+
 
 // Function to check whether the given request is present in cache
 int getCacheIndex(char *filename,cache_entry_t * cache){
@@ -79,9 +112,28 @@ int getCacheIndex(char *filename,cache_entry_t * cache){
 }
 
 // Function to add the request and its file content into the cache
-void addIntoCache(char *mybuf, char *memory , int memory_size){
-  // It should add the request at an index according to the cache replacement policy
-  // Make sure to allocate/free memeory when adding or replacing cache entries
+void addIntoCache(cache_entry_t * cache, char *name,int bytesread,char *content_buffer,char *cont_type, int cache_size){
+
+  for(int i = 0; i < cache_size; i++){
+    if(cache[i].status == -1){
+      cache[i].filename = name;
+      cache[i].bytes = bytesread;
+      cache[i].content = content_buffer;
+      cache[i].content_type = cont_type;
+      cache[i].status = 1;
+      return i
+    }
+  }
+  //replace random cache_entry
+  int rand_index = rand() % cache_size;
+
+  cache.[rand_index].filename = name;
+  cache.[rand_index].bytes = bytesread;
+  cache.[rand_index].content = content_buffer;
+  cache.[rand_index].content_type = cont_type;
+
+  return rand_index
+  
 }
 
 // clear the memory allocated to the cache
@@ -103,52 +155,37 @@ void initCache(char *cache){
   cache_entry_t cache[cache_size];
   memset(cache,0,cache_size * sizeof(cache_entry_t));
 
+  for(int i = 0; i < cache_size; i++){
+    cache[i].bytes = -1;
+    memset(cache[i].filename, '\0', BUFF_SIZE);
+    memset(cache[i].content, '\0', BUFF_SIZE);
+    memset(cache[i].content_type, '\0', BUFF_SIZE);
+    cache[i].status = -1;
+  }
+
 }
 
-void enqueue(queue *q,char *name, int descriptor, void *req)
-{
-    node *tmp;
-    tmp = malloc(sizeof(node));
-    tmp->fd = descriptor;
-    tmp->filename = filename;
-    tmp->next = NULL;
-    if(!isempty(q))
-    {
-        q->rear->next = tmp;
-        q->rear = tmp;
-    }
-    else
-    {
-        q->front = q->rear = tmp;
-    }
-    q->count++;
-}
 
-node* dequeue(queue *q)
-{
-    node *tmp;
-    int n = q->front->data;
-    tmp = q->front;
-    q->front = q->front->next;
-    q->count--;
-
-    //free(tmp);
-    return tmp;
-}
 // Function to open and read the file from the disk into the memory
 // Add necessary arguments as needed
-int readFromDisk(char *content_buffer,char *filename) {
+int readFromDisk(char *content_buffer,int fd) {
 
-  FILE *file = fopen(filename, "r");
+  FILE *file = fdopen(fd, "r");
+  int bytes_read;
 
-  if(file != NULL){
+  if(file == NULL){
+    perror("Error opening file")
+    return -1
+  }
 
-    while((file_data = getc(fp)) != EOF)
-    {
-        strcat(content_buffer, &file_data);
-    }
-    fclose(file);
-}
+  if((bytes_read = read(fd,content_buffer,BUFF_SIZE)) > 0){
+
+    return bytes_read
+  }
+  else{
+    perror("Error reading file")
+    return -1
+  }
   // Open and read the contents of file given the request
 }
 
@@ -242,33 +279,27 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
   		start_time=-1;
   	}
 
-      // Get the request from the queue
-      request = dequeue(request_queue)
+    // Get a request from the queue. Continue to next itertation if no requests are in the queue
+    if((request = dequeue(request_queue)) == NULL){
+      continue;
+    }
 
-      if(request == NULL){ //no request in queue so continue to next iteration
-        continue;
+    if((index = getCacheIndex(request.filename,cache,cache_size)) == -1){  //if request in not in cache then readfrom disk and add to cache
+
+      if((bytesread = readFromDisk(content_buffer,request.fd))>0){
+        index = addIntoCache(cache,request.filename,bytesread,content_buffer,content_type,cache_size)
+
       }
+      else{ //retrive request from cache if in the cache
 
-
-    if((index = getCacheIndex(request.filename,cache,cache_size)) == -1){
-
-          readFromDisk(content_buffer,request.fd);
-
-          if //use a pointer to keep track where we are in the cache. if pointer is at last index. go to front and replace LIFO
-            //use cache[i].status to check if spot is occupied
-
-        //after read from file, make cache entry. Use replacement policy if cache is full
-      }
-      else{
-
-        cache_entry = cache[index]
+        cache_entry = cache[index
         //request is in the cache
         //get contents from cache index and return
       }
 
 
 
-      // Stop recording the time, added by C.P.
+    // Stop recording the time, added by C.P.
   	if((end_time=time(NULL))==((time_t)-1)){
   		end_time=-1;
   	}
@@ -278,10 +309,9 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
 
       // Log the request into the file and terminal
 
-      // return the result (modify parameters later)
   	if(return_result(int fd, char *content_type, char *buf, int numbytes))!=0){
   		return_error(int fd, char *buf);
-  	} // added by C.P.
+  	}
   }
   return NULL;
 }

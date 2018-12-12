@@ -215,6 +215,22 @@ int readFromDisk(char *content_buffer,int fd) {
 char* getContentType(char * mybuf) {
   // Should return the content type based on the file type in the request
   // (See Section 5 in Project description for more details)
+	int i=0;
+	char *unused_token= strtok(mybuf,".");
+	char *wanted_token= strtok(NULL, ".");
+
+	if ((strcmp("html",wanted_token)==0)||(strcmp("htm",wanted_token)==0)){
+		return "text/html";
+	}
+	else if (strcmp("jpg",wanted_token)==0){
+		return "image/jpeg";
+	}
+        else if (strcmp("gif",wanted_token)==0){
+		return "image/gif";
+	}  
+	else{
+		return "text/plain";
+	}
 }
 
 // This function returns the current time in milliseconds
@@ -280,6 +296,8 @@ void * dispatch(darg_t *dispatcher_args) {
 // Function to retrieve the request from the queue, process it and then return a result to the client
 void * worker(warg_t *worker_args){
 
+  int counter = 0;
+
   while (1) {
 
     time_t start_time, end_time;
@@ -292,6 +310,9 @@ void * worker(warg_t *worker_args){
 
     int bytesread;
     int index;
+    int threadID = pthread_self(); 
+    int hit_or_miss;// 1 if hit, 0 if miss 
+    char * log_string; 
 
     //Start recording time, added by C.P.
     if((start_time=time(NULL))==((time_t)-1)){
@@ -308,10 +329,12 @@ void * worker(warg_t *worker_args){
       if((bytesread = readFromDisk(content_buffer,request->fd))>0){
         index = addIntoCache(worker_args->cache,request->fd,request->filename,bytesread,content_buffer,content_type,worker_args->cache_size);
         cache_entry = worker_args->cache[index];
+	hit_or_miss = 0;
 
       }
       else{
         cache_entry = worker_args->cache[index];
+	hit_or_miss = 1;
       }
     }
 
@@ -323,12 +346,33 @@ void * worker(warg_t *worker_args){
 
   	//total time taken to get request and data, added by C.P.
   	time_taken=difftime(start_time,end_time);
+	counter = counter+1;
 
       // Log the request into the file and terminal
 
   	if((return_result(cache_entry.fd, cache_entry.content, cache_entry.content_type,cache_entry.bytes))!=0){
   		return_error(cache_entry.fd, "error text");
   	}
+	log_string = "[ ";
+	strcpy(log_string, threadID);
+	strcpy(log_string, "][");
+	strcpy(log_string, counter);
+	strcpy(log_string, "][");
+	strcpy(log_string, cache_entry.fd);
+	strcpy(log_string, "][");
+	strcpy(log_string, cache_entry.filename);
+	strcpy(log_string, "][");
+	strcpy(log_string, bytesread);
+	strcpy(log_string, "][");
+	strcpy(log_string, time_taken);
+	strcpy(log_string, "][");
+	strcpy(log_string, hit_or_miss);
+	strcpy(log_string, "]");
+
+	if((write(1,log_string,sizeof(log_string)))!=0){
+		perror("Test");
+	}
+	
   }
   return NULL;
 }

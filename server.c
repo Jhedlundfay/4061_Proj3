@@ -24,16 +24,6 @@
 
 // structs:
 
-struct worker_args {
-  queue *request_queue;
-  cache_entry_t * cache;
-  int cache_size;
-};
-
-struct dispatch_args {
-  queue *request_queue;
-  int queue_length;
-};
 
 
 struct request_node
@@ -41,14 +31,14 @@ struct request_node
     int fd;
     char *filename;
     struct node *next;
-};typedef struct node node;
+}request_node;
 
 struct queue
 {
     int count;
     struct node *front;
     struct node *rear;
-};typedef struct queue queue;
+}queue;
 
 /*typedef struct request_queue {
    int fd;
@@ -63,6 +53,16 @@ typedef struct cache_entry {
     char *content_type;
     int status;
 } cache_entry_t;
+
+typedef struct worker_args {
+  struct queue * request_queue;
+  cache_entry_t * cache;
+  int cache_len;
+}worker_args;
+
+typedef struct dispatch_args {
+  struct queue * request_queue;
+}dispatch_args;
 
 
 /* ************************ Dynamic Pool Code ***********************************/
@@ -82,15 +82,16 @@ void * dynamic_pool_size_update(void *arg) {
 
 void enqueue(struct queue *q,char *name, int descriptor)
 {
-    node *tmp;
-    tmp = malloc(sizeof(struct node));
+    struct request_node *tmp;
+    tmp = malloc(sizeof(struct request_node));
     tmp->fd = descriptor;
     tmp->filename = name;
     tmp->next = NULL;
     if(q->rear != NULL)
     {
-        q->rear->next = tmp;
-        q->rear = tmp;
+
+       q->rear-> next = tmp;
+       q->rear = tmp;
     }
     else
     {
@@ -99,7 +100,7 @@ void enqueue(struct queue *q,char *name, int descriptor)
     q->count++;
 }
 
-struct node *dequeue(queue *q)
+struct node *dequeue(struct queue *q)
 {
     struct node *tmp;
     int n = q->front->data;
@@ -111,7 +112,7 @@ struct node *dequeue(queue *q)
 
 
 // Function to check whether the given request is present in cache
-int getCacheIndex(char *filename,cache_entry_t * cache,cache_size){
+int getCacheIndex(char *filename,cache_entry_t * cache, int cache_size){
   /// return the index if the request is present in the cache
   for(int i = 0; i< cache_size ;i++){
     if(strcmp(filename,cache[i].filename)){
@@ -153,7 +154,7 @@ void deleteCache(char *cache){
 }
 
 // Function to initialize the cache
-void initQueue(queue *q)
+void initQueue(struct queue *q)
 {
     q->count = 0;
     q->front = NULL;
@@ -163,7 +164,7 @@ void initQueue(queue *q)
 void initCache(char *cache,int cache_size){
 
   // Allocating memory and initializing the cache array
-  cache_entry_t cache[cache_size];
+
   memset(cache,0,cache_size * sizeof(cache_entry_t));
 
   for(int i = 0; i < cache_size; i++){
@@ -340,13 +341,13 @@ int main(int argc, char **argv) {
 
 
   // Get the input args (added by C.P.)
-	port=argv[1];
+	port= atoi(argv[1]);
 	path=argv[2];
-	num_dispatcher=argv[3];
-	num_workers=argv[4];
-	dynamic_flag=argv[5];
-	queue_length=argv[6];
-	cache_size=argv[7];
+	num_dispatcher=atoi(argv[3]);
+	num_workers=atoi(argv[4]);
+	//dynamic_flag=atoi(argv[5]);
+	queue_length=atoi(argv[6]);
+	cache_size=atoi(argv[7]);
 
 
 
@@ -362,11 +363,11 @@ int main(int argc, char **argv) {
 	//Here, check is path is a valid path / file
 
 	if((num_dispatcher>MAX_THREADS)||(num_dispatcher<=0)){
-		printf("Invalid dispatcher thread number. Please pick a number between 1 and 100")
+		printf("Invalid dispatcher thread number. Please pick a number between 1 and 100");
 		return -1;
 	}
 	if((num_workers>MAX_THREADS)||(num_workers<=0)){
-		printf("Invalid worker thread number. Please pick a number between 1 and 100")
+		printf("Invalid worker thread number. Please pick a number between 1 and 100");
 		return -1;
 	}
 
@@ -381,24 +382,44 @@ int main(int argc, char **argv) {
 
   //init server and cache
   init(port);
-  cache_entry_t cache[cache_size];
-  initCache(cache,cache_size);
+  cache_entry_t request_cache[cache_size];
+  initCache(request_cache,cache_size);
 
   // initialize queue
-  queue *request_queue;
-  request_queue = malloc(sizeof(queue));
-  initQueue(request_queue);
+  queue *req_queue;
+  req_queue = malloc(sizeof(queue));
+  initQueue(req_queue);
 
 
   // setting up the threads -------------------------------------------------------
 
+/*  struct worker_args {
+    queue *request_queue;
+    cache_entry_t * cache;
+    int cache_len;
+  }worker_args;
+
+  struct dispatch_args {
+    queue *request_queue;
+    int queue_len;
+  }dispatch_args; */
+
+
   pthread_t worker_pool[num_workers];
   pthread_t dispatcher_pool[num_dispatcher];
 
-  struct worker_args args;
-  struct dispatch_args;
+  worker_args w_args   = {.request_queue = req_queue, .cache = request_cache, .cache_len = cache_size};
+  dispatch_args d_args = {.request_queue = req_queue};
 
-  worker_args->
+
+
+  w_args->request_queue = req_queue;
+  w_args->cache = request_cache;
+  w_args->cache_len = cache_size;
+
+  d_args->request_queue = req_queue;
+  d_args->queue_len = queue_length
+
 
 
   if(pthread_mutex_init(&lock,NULL)!=0){
@@ -410,14 +431,14 @@ int main(int argc, char **argv) {
   // creating worker and dispatcher threads ---------------------------------------
 
   for(i = 0 ; i < num_workers; i++ ){
-      if(pthread_create(worker_pool[i],NULL,worker,NULL)){
+      if(pthread_create(worker_pool[i],NULL,worker,(void *)&wargs)){
         perror("Error creating worker thread");
         exit(1);
       }
 
 
   for(i = 0 ; i < num_dispatcher; i++ ){
-      if(pthread_create(dispatcher_pool[i],NULL,dispatch,NULL)){
+      if(pthread_create(dispatcher_pool[i],NULL,dispatch,(void *)&dargs)){
         perror("Error creating dispatcher thread");
         exit(1);
       }

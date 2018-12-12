@@ -244,8 +244,8 @@ int getCurrentTimeInMills() {
 
 // Function to receive the request from the client and add to the queue
 // Dispatcher threads are expected to be blocked at accept_connection until a new request is fired.
-void * dispatch(darg_t *dispatcher_args) {
-
+void * dispatch(void *args) {
+  darg_t *dispatcher_args = args;
   while (1) {
 
   int connection_fd;
@@ -294,10 +294,10 @@ void * dispatch(darg_t *dispatcher_args) {
 /**********************************************************************************/
 
 // Function to retrieve the request from the queue, process it and then return a result to the client
-void * worker(warg_t *worker_args){
+void * worker(void *args){
 
   int counter = 0;
-
+  warg_t *worker_args = args;
   while (1) {
 
     time_t start_time, end_time;
@@ -474,7 +474,7 @@ int main(int argc, char **argv) {
   // creating worker and dispatcher threads ---------------------------------------
 
   for(int i = 0 ; i < num_workers; i++ ){
-      if(pthread_create(worker_pool[i],NULL,worker,w_args)){
+      if(pthread_create(&worker_pool[i],NULL,worker,&w_args)){
         perror("Error creating worker thread");
         exit(1);
       }
@@ -482,7 +482,7 @@ int main(int argc, char **argv) {
 
 
   for(int i = 0 ; i < num_dispatcher; i++ ){
-      if(pthread_create(dispatcher_pool[i],NULL,dispatch,d_args)){
+      if(pthread_create(&dispatcher_pool[i],NULL,dispatch,&d_args)){
         perror("Error creating dispatcher thread");
         exit(1);
       }

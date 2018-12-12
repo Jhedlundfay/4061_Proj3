@@ -353,6 +353,8 @@ void * worker(warg_t *worker_args){
   	if((return_result(cache_entry.fd, cache_entry.content, cache_entry.content_type,cache_entry.bytes))!=0){
   		return_error(cache_entry.fd, "error text");
   	}
+
+	char * time_taken_char = stroi(time_taken);
 	log_string = "[ ";
 	strcpy(log_string, threadID);
 	strcpy(log_string, "][");
@@ -364,7 +366,7 @@ void * worker(warg_t *worker_args){
 	strcpy(log_string, "][");
 	strcpy(log_string, bytesread);
 	strcpy(log_string, "][");
-	strcpy(log_string, time_taken);
+	strcpy(log_string, time_taken_char);
 	strcpy(log_string, "][");
 	strcpy(log_string, hit_or_miss);
 	strcpy(log_string, "]");

@@ -196,25 +196,16 @@ void initCache(cache_entry_t *cache,int cache_size){
 
 // Function to open and read the file from the disk into the memory
 // Add necessary arguments as needed
-int readFromDisk(char *content_buffer,int fd) {
-
-  FILE *file = fdopen(fd, "r");
-  int bytes_read;
-
-  if(file == NULL){
-    perror("Error opening file");
-    return -1;
-  }
-
-  if((bytes_read = read(fd,content_buffer,BUFF_SIZE)) > 0){
-
-    return bytes_read;
-  }
-  else{
-    perror("Error reading file");
-    return -1;
-  }
-  // Open and read the contents of file given the request
+int readFromDisk(char *content_buffer,int fd,char *filename) {
+    FILE *fp = fopen (filename,"r");
+    if(fp != NULL){
+     fread(content_buffer, sizeof(char),sizeof(content_buffer),fp);
+     fclose(fp);
+     return 0;
+   }
+   else{
+     return -1;
+   }
 }
 
 /**********************************************************************************/
@@ -315,10 +306,10 @@ void * worker(void *args){
     double time_taken;
 
     char content_type[BUFF_SIZE];
-    char content_buffer[BUFF_SIZE];
     cache_entry_t cache_entry;
     request_node_t *request;
-
+    struct stat st; /*declare stat variable*/
+    long int size;
     int bytesread;
     int index;
     int threadID = pthread_self();
@@ -347,11 +338,22 @@ void * worker(void *args){
     pthread_mutex_lock(&add_cache);
 
 
+    //make this a function
+
+    request->filename ++ ;
+    if(stat(request->filename,&st)==0){
+          size = st.st_size;
+    }
+    else{
+          size = 0;
+    }
+    char content_buffer[size+1];
+
+
     if((index = getCacheIndex(request->filename,worker_args->cache,worker_args->cache_size)) == -1) {  //if request in not in cache then readfrom disk and add to cache
+      if((bytesread = readFromDisk(content_buffer,request->fd,request->filename))== 0){
 
-      if((bytesread = readFromDisk(content_buffer,request->fd))>0){
-
-        index = addIntoCache(worker_args->cache,request->fd,request->filename,bytesread,content_buffer,content_type,worker_args->cache_size);
+        index = addIntoCache(worker_args->cache,request->fd,request->filename,sizeof(content_buffer),content_buffer,content_type,worker_args->cache_size);
         cache_entry = worker_args->cache[index];
         hit_or_miss = 0;
 
@@ -375,15 +377,20 @@ void * worker(void *args){
 
       // Log the request into the file and terminal
     //chanhe filename to content type
-  	if((return_result(request->fd,cache_entry.content,request->filename,cache_entry.bytes))!=0){
-      printf("Worker----> return_result didnt succeed");
+  	if((return_result(request->fd,request->filename,content_buffer,size))!=0){
   		return_error(cache_entry.fd, "error text");
   	}
 
+  
 
-  struct stat buf;
-  fstat(request->fd, &buf);
-  off_t size = buf.st_size;
+
+
+    /*get the size using stat()*/
+
+
+  //this gets rid of the "/"
+
+
 
 	char buffer[BUFF_SIZE];
   /*thread id is a weird number */
@@ -392,25 +399,6 @@ void * worker(void *args){
   /*Garbage values are printing after */
   sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request->fd,request->filename,size,time_taken,hit_or_miss);
 
-
-
-
-	/*log_string = "[ ";
-	strcat(log_string, atoi(threadID));
-	strcat(log_string, "][");
-	strcat(log_string, stroi(counter));
-	strcpy(log_string, "][");
-	strcpy(log_string, cache_entry.fd);
-	strcpy(log_string, "][");
-	strcpy(log_string, cache_entry.filename);
-	strcpy(log_string, "][");
-	strcpy(log_string, bytesread);
-	strcpy(log_string, "][");
-	strcpy(log_string, time_taken_char);
-	strcpy(log_string, "][");
-	strcpy(log_string, hit_or_miss);
-	strcpy(log_string, "]");
-*/
 	if((write(1,buffer,sizeof(buffer)))!=0){
 		perror("Test");
 	}

@@ -354,16 +354,11 @@ void * worker(warg_t *worker_args){
   		return_error(cache_entry.fd, "error text");
   	}
 
-	char buffer[BUFF_SIZE];
-  sprintf(buffer,"[%d][%d][%d][%s][%d][%lf][%d]", threadID,counter,cache_entry.fd,cache_entry.filename,bytesread,time_taken,hit_or_miss);
-
-
-
-
-	/*log_string = "[ ";
-	strcat(log_string, atoi(threadID));
-	strcat(log_string, "][");
-	strcat(log_string, stroi(counter));
+	char * time_taken_char = stroi(time_taken);
+	log_string = "[ ";
+	strcpy(log_string, threadID);
+	strcpy(log_string, "][");
+	strcpy(log_string, counter);
 	strcpy(log_string, "][");
 	strcpy(log_string, cache_entry.fd);
 	strcpy(log_string, "][");
@@ -375,8 +370,8 @@ void * worker(warg_t *worker_args){
 	strcpy(log_string, "][");
 	strcpy(log_string, hit_or_miss);
 	strcpy(log_string, "]");
-*/
-	if((write(1,buffer,sizeof(buffer)))!=0){
+
+	if((write(1,log_string,sizeof(log_string)))!=0){
 		perror("Test");
 	}
 
@@ -483,21 +478,6 @@ int main(int argc, char **argv) {
 
   for(int i = 0 ; i < num_dispatcher; i++ ){
       if(pthread_create(dispatcher_pool[i],NULL,dispatch,d_args)){
-        perror("Error creating dispatcher thread");
-        exit(1);
-      }
-  }
-
-  for(int i = 0 ; i < num_workers; i++ ){
-      if(pthread_join(worker_pool[i],NULL)){
-        perror("Error creating worker thread");
-        exit(1);
-      }
-  }
-
-
-  for(int i = 0 ; i < num_dispatcher; i++ ){
-      if(pthread_join(dispatcher_pool[i],NULL)){
         perror("Error creating dispatcher thread");
         exit(1);
       }

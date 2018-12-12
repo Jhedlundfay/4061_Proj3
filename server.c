@@ -28,16 +28,14 @@ struct request_node
     int fd;
     char *filename;
     struct node *next;
-};
-typedef struct node node;
+};typedef struct node node;
 
 struct queue
 {
     int count;
-    node *front;
-    node *rear;
-};
-typedef struct queue queue;
+    struct node *front;
+    struct node *rear;
+};typedef struct queue queue;
 
 /*typedef struct request_queue {
    int fd;
@@ -46,6 +44,7 @@ typedef struct queue queue;
 */
 typedef struct cache_entry {
     char *filename;
+    int fd;
     int bytes;
     char *content;
     char *content_type;
@@ -68,14 +67,14 @@ void * dynamic_pool_size_update(void *arg) {
 
 /* ************************************ Cache Code ********************************/
 
-void enqueue(queue *q,char *name, int descriptor, void *req)
+void enqueue(struct queue *q,char *name, int descriptor)
 {
     node *tmp;
-    tmp = malloc(sizeof(node));
+    tmp = malloc(sizeof(struct node));
     tmp->fd = descriptor;
     tmp->filename = name;
     tmp->next = NULL;
-    if(!isempty(q))
+    if(q->rear != NULL)
     {
         q->rear->next = tmp;
         q->rear = tmp;
@@ -87,9 +86,9 @@ void enqueue(queue *q,char *name, int descriptor, void *req)
     q->count++;
 }
 
-node* dequeue(queue *q)
+struct node *dequeue(queue *q)
 {
-    node *tmp;
+    struct node *tmp;
     int n = q->front->data;
     tmp = q->front;
     q->front = q->front->next;
@@ -99,41 +98,40 @@ node* dequeue(queue *q)
 
 
 // Function to check whether the given request is present in cache
-int getCacheIndex(char *filename,cache_entry_t * cache){
+int getCacheIndex(char *filename,cache_entry_t * cache,cache_size){
   /// return the index if the request is present in the cache
   for(int i = 0; i< cache_size ;i++){
     if(strcmp(filename,cache[i].filename)){
       return i;
     }
   }
-
-  return -1
-
+  return -1;
 }
 
 // Function to add the request and its file content into the cache
-void addIntoCache(cache_entry_t * cache, char *name,int bytesread,char *content_buffer,char *cont_type, int cache_size){
+int addIntoCache(cache_entry_t * cache, int fdnum ,char *name,int bytesread,char *content_buffer,char *cont_type, int cache_size){
 
   for(int i = 0; i < cache_size; i++){
     if(cache[i].status == -1){
       cache[i].filename = name;
+      cache[i].fd = fdnum;
       cache[i].bytes = bytesread;
       cache[i].content = content_buffer;
       cache[i].content_type = cont_type;
       cache[i].status = 1;
-      return i
+      return i;
     }
   }
   //replace random cache_entry
   int rand_index = rand() % cache_size;
 
-  cache.[rand_index].filename = name;
-  cache.[rand_index].bytes = bytesread;
-  cache.[rand_index].content = content_buffer;
-  cache.[rand_index].content_type = cont_type;
+  cache[rand_index].filename = name;
+  cache[rand_index].bytes = bytesread;
+  cache[rand_index].content = content_buffer;
+  cache[rand_index].content_type = cont_type;
 
-  return rand_index
-  
+  return rand_index;
+
 }
 
 // clear the memory allocated to the cache
@@ -149,7 +147,7 @@ void initQueue(queue *q)
     q->rear = NULL;
 }
 
-void initCache(char *cache){
+void initCache(char *cache,int cache_size){
 
   // Allocating memory and initializing the cache array
   cache_entry_t cache[cache_size];
@@ -174,17 +172,17 @@ int readFromDisk(char *content_buffer,int fd) {
   int bytes_read;
 
   if(file == NULL){
-    perror("Error opening file")
-    return -1
+    perror("Error opening file");
+    return -1;
   }
 
-  if((bytes_read = read(fd,content_buffer,BUFF_SIZE)) > 0){
+  if((bytes_read = fread(fd,content_buffer,BUFF_SIZE)) > 0){
 
-    return bytes_read
+    return bytes_read;
   }
   else{
-    perror("Error reading file")
-    return -1
+    perror("Error reading file");
+    return -1;
   }
   // Open and read the contents of file given the request
 }
@@ -222,7 +220,7 @@ void * dispatch(queue *request_queue,int queue_length) {
     continue;
   }
 
-	  connection_fd = accept_connection(void); //added by C.P.
+	  connection_fd = accept_connection(); //added by C.P.
 
   if(pthread_mutex_unlock(&lock) == -1){
     printf("Failed to unlock thread after accept_connection() call");
@@ -236,13 +234,13 @@ void * dispatch(queue *request_queue,int queue_length) {
      continue;
    }
    else{
-        if(request_queue.count < queue_length){   //check if queue is full
-            enqueue(request_queue,connection_fd,filename)
+        if(request_queue->count < queue_length){   //check if queue is full
+            enqueue(request_queue,filename,connection_fd);
           }
         else{
             replace = dequeue(request_queue);
             free(replace);
-            enqueue(request_queue,connection_fd,filename)
+            enqueue(request_queue,filename,connection_fd)
             }
        }
   }
@@ -269,7 +267,7 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
     char content_type[BUFF_SIZE];
     char content_buffer[BUFF_SIZE];
     cache_entry_t cache_entry;
-    node request;
+    node *request;
 
     int bytesread;
     int index;
@@ -287,14 +285,12 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
     if((index = getCacheIndex(request.filename,cache,cache_size)) == -1){  //if request in not in cache then readfrom disk and add to cache
 
       if((bytesread = readFromDisk(content_buffer,request.fd))>0){
-        index = addIntoCache(cache,request.filename,bytesread,content_buffer,content_type,cache_size)
+        index = addIntoCache(cache,request.fd,request.filename,bytesread,content_buffer,content_type,cache_size)
+        cache_entry = cache[index];
 
       }
-      else{ //retrive request from cache if in the cache
-
-        cache_entry = cache[index
-        //request is in the cache
-        //get contents from cache index and return
+      else{
+        cache_entry = cache[index];
       }
 
 
@@ -309,8 +305,8 @@ void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
 
       // Log the request into the file and terminal
 
-  	if(return_result(int fd, char *content_type, char *buf, int numbytes))!=0){
-  		return_error(int fd, char *buf);
+  	if((return_result(cache_entry.fd, cache_entry.content_type,cache_entry.content_type,cache_entry.bytesread))!=0){
+  		return_error(cache_entry.fd, char *buf //error text **************************************************************************);
   	}
   }
   return NULL;
@@ -373,7 +369,7 @@ int main(int argc, char **argv) {
   //init server and cache
   init(port);
   cache_entry_t cache[cache_size];
-  initCache(cache);
+  initCache(cache,cache_size);
 
   // initialize queue
   queue *request_queue;

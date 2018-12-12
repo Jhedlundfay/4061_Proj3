@@ -172,13 +172,15 @@ void initQueue(request_queue_t *q)
 void initCache(cache_entry_t *cache,int cache_size){
 
   // Allocating memory and initializing the cache array
-  // memset(cache->filename, 0, cache_size * sizeof(cache_entry_t));
+   //memset(cache->filename, 0, cache_size * sizeof(cache_entry_t));
 
   for(int i = 0; i < cache_size; i++){
-    cache[i].bytes = -1;
-    memset(cache[i].filename, '\0', BUFF_SIZE);
-    memset(cache[i].content, '\0', BUFF_SIZE);
-    memset(cache[i].content_type, '\0', BUFF_SIZE);
+
+    cache[i].bytes  = -1;
+    printf("We made it !!!!\n");
+    cache[i].filename = malloc(sizeof(BUFF_SIZE));
+    cache[i].content = malloc(sizeof(BUFF_SIZE));
+    cache[i].content_type = malloc(sizeof(BUFF_SIZE));
     cache[i].status = -1;
   }
 
@@ -388,6 +390,7 @@ void * worker(void *args){
 
 int main(int argc, char **argv) {
 
+
   // Error check on number of arguments
   if(argc != 8){
     printf("usage: %s port path num_dispatcher num_workers dynamic_flag queue_length cache_size\n", argv[0]);
@@ -439,8 +442,10 @@ int main(int argc, char **argv) {
   // Start the server and initialize cache and queue-----------------------------------------
 
   //init server and cache
+
   init(port);
-  cache_entry_t req_cache[cache_size];
+  cache_entry_t * req_cache;
+  req_cache = malloc(cache_size*sizeof(cache_entry_t));
   initCache(req_cache,cache_size);
 
   // initialize queue

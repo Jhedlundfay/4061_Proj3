@@ -300,9 +300,6 @@ void * worker(warg_t *worker_args){
 
   while (1) {
 
-    time_t start_time, end_time;
-    double time_taken;
-
     char content_type[BUFF_SIZE];
     char content_buffer[BUFF_SIZE];
     cache_entry_t cache_entry;
@@ -314,10 +311,7 @@ void * worker(warg_t *worker_args){
     int hit_or_miss;// 1 if hit, 0 if miss 
     char * log_string; 
 
-    //Start recording time, added by C.P.
-    if((start_time=time(NULL))==((time_t)-1)){
-      start_time=-1;
-    }
+    int start_time = getCurrentTimeInMills();
 
     // Get a request from the queue. Continue to next itertation if no requests are in the queue
     if((request = dequeue(worker_args->request_queue)) == NULL){
@@ -339,13 +333,10 @@ void * worker(warg_t *worker_args){
     }
 
 
-    // Stop recording the time, added by C.P.
-  	if((end_time=time(NULL))==((time_t)-1)){
-  		end_time=-1;
-  	}
+    int end_time = getCurrentTimeInMills();
 
   	//total time taken to get request and data, added by C.P.
-  	time_taken=difftime(start_time,end_time);
+  	int time_taken= end_time - start_time;
 	counter = counter+1;
 
       // Log the request into the file and terminal
@@ -354,7 +345,8 @@ void * worker(warg_t *worker_args){
   		return_error(cache_entry.fd, "error text");
   	}
 
-	char * time_taken_char = stroi(time_taken);
+	char time_taken_char = time_taken + '0';
+
 	log_string = "[ ";
 	strcpy(log_string, threadID);
 	strcpy(log_string, "][");

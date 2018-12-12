@@ -322,9 +322,17 @@ void * worker(void *args){
     }
 
     // Get a request from the queue. Continue to next itertation if no requests are in the queue
+    if (worker_args->request_queue->count == 0) {
+      continue;
+    } else {
+      request = dequeue(worker_args->request_queue);
+    }
+
+/*
     if((request = dequeue(worker_args->request_queue)) == NULL){
       continue;
     }
+*/
 
     if((index = getCacheIndex(request->filename,worker_args->cache,worker_args->cache_size)) == -1) {  //if request in not in cache then readfrom disk and add to cache
 

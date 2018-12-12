@@ -11,13 +11,16 @@
 #include <time.h>
 #include "util.h"
 #include <stdbool.h>
-#include <unistd.h> //for read(int fd, void* content_buffer, int size)
+#include <unistd.h>
+#include <sys/stat.h> //for read(int fd, void* content_buffer, int size)
 
 #define MAX_THREADS 100
 #define MAX_queue_len 100
 #define MAX_CE 100
 #define INVALID -1
 #define BUFF_SIZE 1024
+#define HIT "HIT"
+#define MISS "MISS"
 
 /*
   THE CODE STRUCTURE GIVEN BELOW IS JUST A SUGESSTION. FEEL FREE TO MODIFY AS NEEDED
@@ -65,8 +68,13 @@ typedef struct dispatch_args {
 } request_t;
 */
 
-pthread_mutex_t accept_con_mtx =  PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t acc =  PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t cond_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t deq_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t enq_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t add_cache = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t deq = PTHREAD_COND_INITIALIZER;
+pthread_cond_t enq = PTHREAD_COND_INITIALIZER;
 
 
 /* ************************ Dynamic Pool Code ***********************************/
@@ -130,7 +138,7 @@ int addIntoCache(cache_entry_t * cache, int fdnum ,char *name,int bytesread,char
 
   for(int i = 0; i < cache_size; i++){
     if(cache[i].status == -1){
-      cache[i].filename = name;
+      strncpy(cache[i].filename,name,sizeof(name));
       cache[i].fd = fdnum;
       cache[i].bytes = bytesread;
       cache[i].content = content_buffer;
@@ -177,7 +185,6 @@ void initCache(cache_entry_t *cache,int cache_size){
   for(int i = 0; i < cache_size; i++){
 
     cache[i].bytes  = -1;
-    printf("We made it !!!!\n");
     cache[i].filename = malloc(sizeof(BUFF_SIZE));
     cache[i].content = malloc(sizeof(BUFF_SIZE));
     cache[i].content_type = malloc(sizeof(BUFF_SIZE));
@@ -254,33 +261,35 @@ void * dispatch(void *args) {
   request_node_t *replace;
   char filename[BUFF_SIZE];
 
-  if(pthread_mutex_lock(&accept_con_mtx) == -1){
-    printf("Failed to lock thread before accept_connection() call");
-    continue;
-  }
+  pthread_mutex_lock(&acc);
 
+    printf("---------accepting connection----------\n");
 	  connection_fd = accept_connection(); //added by C.P.
+    printf("client has connected file descriptor = %d\n",connection_fd );
 
-  if(pthread_mutex_unlock(&accept_con_mtx) == -1){
-    printf("Failed to unlock thread after accept_connection() call");
-    continue;
-  }
+  pthread_mutex_unlock(&acc);
     // Get request from the client
   if(connection_fd >= 0){
-
 	 if(get_request(connection_fd,filename)!=0){
      printf("Error getting request from fd: %d",connection_fd);
      continue;
    }
    else{
+        printf("get_request() succesfully ran. Filename is == %s \n",filename);
+        pthread_mutex_lock(&enq_mtx);
         if(dispatcher_args->request_queue->count < dispatcher_args->queue_length){   //check if queue is full
             enqueue(dispatcher_args->request_queue,filename,connection_fd);
+            pthread_cond_signal(&enq);
+            printf("Dispacther-->request has been added to the queue. Filename is = %s \n",dispatcher_args->request_queue->head->filename);
           }
         else{
-            replace = dequeue(dispatcher_args->request_queue);
-            free(replace);
+           while(dispatcher_args->request_queue->count < dispatcher_args->queue_length){
+            pthread_cond_wait(&deq,&enq_mtx);
+          }
             enqueue(dispatcher_args->request_queue,filename,connection_fd);
+            pthread_cond_signal(&enq);
             }
+         pthread_mutex_unlock(&enq_mtx);
        }
   }
   else{
@@ -320,33 +329,39 @@ void * worker(void *args){
     if((start_time=time(NULL))==((time_t)-1)){
       start_time=-1;
     }
+    pthread_mutex_lock(&deq_mtx);
+
 
     // Get a request from the queue. Continue to next itertation if no requests are in the queue
-    if (worker_args->request_queue->count == 0) {
-      continue;
-    } else {
-      request = dequeue(worker_args->request_queue);
+    while(worker_args->request_queue->count == 0) {
+      pthread_cond_wait(&enq,&deq_mtx);
     }
-
+      request = dequeue(worker_args->request_queue);
+      printf("Worker dequed request filename == %s\n",request->filename);
+      pthread_mutex_unlock(&deq_mtx);
 /*
     if((request = dequeue(worker_args->request_queue)) == NULL){
       continue;
     }
 */
+    pthread_mutex_lock(&add_cache);
+
 
     if((index = getCacheIndex(request->filename,worker_args->cache,worker_args->cache_size)) == -1) {  //if request in not in cache then readfrom disk and add to cache
 
       if((bytesread = readFromDisk(content_buffer,request->fd))>0){
+
         index = addIntoCache(worker_args->cache,request->fd,request->filename,bytesread,content_buffer,content_type,worker_args->cache_size);
         cache_entry = worker_args->cache[index];
-	hit_or_miss = 0;
+        hit_or_miss = 0;
 
       }
       else{
         cache_entry = worker_args->cache[index];
-	hit_or_miss = 1;
+	      hit_or_miss = 1;
       }
     }
+    pthread_mutex_unlock(&add_cache);
 
 
     // Stop recording the time, added by C.P.
@@ -356,16 +371,26 @@ void * worker(void *args){
 
   	//total time taken to get request and data, added by C.P.
   	time_taken=difftime(start_time,end_time);
-	counter = counter+1;
+	  counter = counter+1;
 
       // Log the request into the file and terminal
-
-  	if((return_result(cache_entry.fd, cache_entry.content, cache_entry.content_type,cache_entry.bytes))!=0){
+    //chanhe filename to content type
+  	if((return_result(request->fd,cache_entry.content,request->filename,cache_entry.bytes))!=0){
+      printf("Worker----> return_result didnt succeed");
   		return_error(cache_entry.fd, "error text");
   	}
 
+
+  struct stat buf;
+  fstat(request->fd, &buf);
+  off_t size = buf.st_size;
+
 	char buffer[BUFF_SIZE];
-  sprintf(buffer,"[%d][%d][%d][%s][%d][%lf][%d]", threadID,counter,cache_entry.fd,cache_entry.filename,bytesread,time_taken,hit_or_miss);
+  /*thread id is a weird number */
+  /*cache_entry.content_type is weird number so replaced with request->filename*/
+  /*Time taken is negative value */
+  /*Garbage values are printing after */
+  sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request->fd,request->filename,size,time_taken,hit_or_miss);
 
 
 

@@ -23,6 +23,19 @@
 */
 
 // structs:
+
+struct worker_args {
+  queue *request_queue;
+  cache_entry_t * cache;
+  int cache_size;
+};
+
+struct dispatch_args {
+  queue *request_queue;
+  int queue_length;
+};
+
+
 struct request_node
 {
     int fd;
@@ -207,7 +220,7 @@ int getCurrentTimeInMills() {
 
 // Function to receive the request from the client and add to the queue
 // Dispatcher threads are expected to be blocked at accept_connection until a new request is fired.
-void * dispatch(queue *request_queue,int queue_length) {
+void * dispatch(void *dispatcher_args) {
 
   while (1) {
 
@@ -257,7 +270,7 @@ void * dispatch(queue *request_queue,int queue_length) {
 /**********************************************************************************/
 
 // Function to retrieve the request from the queue, process it and then return a result to the client
-void * worker(queue *request_queue,cache_entry_t * cache, int cache_size){
+void * worker(void *worker_args){
 
   while (1) {
 
@@ -382,6 +395,10 @@ int main(int argc, char **argv) {
   pthread_t worker_pool[num_workers];
   pthread_t dispatcher_pool[num_dispatcher];
 
+  struct worker_args args;
+  struct dispatch_args;
+
+  worker_args->
 
 
   if(pthread_mutex_init(&lock,NULL)!=0){

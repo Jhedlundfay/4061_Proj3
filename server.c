@@ -196,16 +196,24 @@ void initCache(cache_entry_t *cache,int cache_size){
 
 // Function to open and read the file from the disk into the memory
 // Add necessary arguments as needed
-int readFromDisk(char *content_buffer,int fd,char *filename) {
-    FILE *fp = fopen (filename,"r");
-    if(fp != NULL){
-     fread(content_buffer, sizeof(char),sizeof(content_buffer),fp);
-     fclose(fp);
-     return 0;
-   }
-   else{
-     return -1;
-   }
+char *readFromDisk(char *content_buffer,int fd,char *filename, long int size) {
+    int file_desc = open(filename,O_RDONLY);
+    char *filecontents = (char *) malloc(size);
+    if(file_desc >= 0){
+      if(read(file_desc,filecontents,size) >= 0){
+        return filecontents;
+      }
+      else{
+
+        return NULL;
+      }
+
+    }
+    else{
+      close(file_desc);
+      return NULL;
+    }
+
 }
 
 /**********************************************************************************/
@@ -341,17 +349,18 @@ void * worker(void *args){
     //make this a function
 
     request->filename ++ ;
+
     if(stat(request->filename,&st)==0){
           size = st.st_size;
     }
     else{
           size = 0;
     }
-    char content_buffer[size+1];
+    char * content_buffer = (char *) malloc(size);
 
 
     if((index = getCacheIndex(request->filename,worker_args->cache,worker_args->cache_size)) == -1) {  //if request in not in cache then readfrom disk and add to cache
-      if((bytesread = readFromDisk(content_buffer,request->fd,request->filename))== 0){
+      if((readFromDisk(content_buffer,request->fd,request->filename,size))!=NULL){
 
         index = addIntoCache(worker_args->cache,request->fd,request->filename,sizeof(content_buffer),content_buffer,content_type,worker_args->cache_size);
         cache_entry = worker_args->cache[index];
@@ -377,11 +386,11 @@ void * worker(void *args){
 
       // Log the request into the file and terminal
     //chanhe filename to content type
-  	if((return_result(request->fd,request->filename,content_buffer,size))!=0){
+  	if((return_result(request->fd,request->filename,readFromDisk(content_buffer,request->fd,request->filename,size),size))!=0){
   		return_error(cache_entry.fd, "error text");
   	}
 
-  
+
 
 
 

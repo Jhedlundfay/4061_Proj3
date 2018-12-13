@@ -325,7 +325,7 @@ void * dispatch(void *args) {
   pthread_mutex_lock(&acc);
 
     printf("---------accepting connection----------\n");
-	  connection_fd = accept_connection(); //added by C.P.
+	  connection_fd = accept_connection(); 
     printf("client has connected file descriptor = %d\n",connection_fd );
 
   pthread_mutex_unlock(&acc);
@@ -386,10 +386,7 @@ void * worker(void *args){
     int hit_or_miss;// 1 if hit, 0 if miss
     char * log_string;
 
-    //Start recording time, added by C.P.
-    /*if((start_time=time(NULL))==((time_t)-1)){
-      start_time=-1;
-    }*/
+  
 
    start_time = getCurrentTimeInMicro();
     pthread_mutex_lock(&deq_mtx);
@@ -403,13 +400,9 @@ void * worker(void *args){
       request = dequeue(worker_args->request_queue);
 
       pthread_mutex_unlock(&deq_mtx);
-/*
-    if((request = dequeue(worker_args->request_queue)) == NULL){
-      continue;
-    }
-*/
-    pthread_mutex_lock(&add_cache);
 
+      pthread_mutex_lock(&add_cache);
+ 
 
     //make this a function
 
@@ -444,40 +437,21 @@ void * worker(void *args){
     pthread_mutex_unlock(&add_cache);
 
 
-    // Stop recording the time, added by C.P.
-  	/*if((end_time=time(NULL))==((time_t)-1)){
-  		end_time=-1;
-  	}*/
+
      end_time = getCurrentTimeInMicro();
 
-  	//total time taken to get request and data, added by C.P.
+  	//total time taken to get request and data
   	time_taken=getCurrentTimeInMicro()-start_time;
 	  counter = counter+1;
 
       // Log the request into the file and terminal
-    //chanhe filename to content type
-
+      //change filename to content type
   	if((return_result(request.fd,request.filename,readFromDisk(content_buffer,request.fd,request.filename,size),size))!=0){
   		return_error(cache_entry.fd, "error text");
   	}
 
 
-
-
-
-    /*get the size using stat()*/
-
-
-  //this gets rid of the "/"
-
-
-
-	//char buffer[BUFF_SIZE];
-  /*thread id is a weird number */
-  /*cache_entry.content_type is weird number so replaced with request->filename*/
-  /*Time taken is negative value */
-  /*Garbage values are printing after */
-
+// Log the request into the file 
 pthread_mutex_lock(&logging_lock); 
 
   char buffer[BUFF_SIZE];
@@ -492,20 +466,13 @@ pthread_mutex_lock(&logging_lock);
   else{
 	sprintf(buffer,"[%d][%d][%d][%s][%ld][%lfms][%s]\n", threadID,counter,request.fd,request.filename,size,time_taken,"MISS");
   }
-  if((write(1,buffer,strlen(buffer)))<=0){ // Debugging 
-	perror("Logging Error");
-  }
+
   if((write(log_fd,buffer,strlen(buffer)))<=0){
 	perror("Logging Error");
   }
   pthread_mutex_unlock(&logging_lock);
 
   }
-  /*sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request.fd,request.filename,size,time_taken,hit_or_miss);
-
-	if((write(1,buffer,sizeof(buffer)))!=0){
-		perror("Test");
-	}*/
 
   
   return NULL;
@@ -596,10 +563,6 @@ int main(int argc, char **argv) {
   d_args.queue_length = queue_length;
 
 
-  /* if(pthread_mutex_init(&lock,NULL)!=0){
-     perror("Failed to mutex init")
-     exit(1);
-   } */
 
 
   // creating worker and dispatcher threads ---------------------------------------

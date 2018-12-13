@@ -129,7 +129,7 @@ request_node_t dequeue(request_node_t *q)
     if(queue_size<0)
     {
         printf("Queue is empty\n");
-        return NULL;
+
     }
     else
     {
@@ -296,7 +296,8 @@ void * dispatch(void *args) {
    else{
         printf("get_request() succesfully ran. Filename is == %s \n",filename);
         pthread_mutex_lock(&enq_mtx);
-        if(queue_size < dispatcher_args-> queue_length){   //check if queue is full
+        if(queue_size < dispatcher_args-> queue_length){
+            printf("----------------%s\n",filename);//check if queue is full
             enqueue(dispatcher_args->request_queue,filename,connection_fd,dispatcher_args->queue_length);
             pthread_cond_signal(&enq);
           }
@@ -334,7 +335,7 @@ void * worker(void *args){
 
     char content_type[BUFF_SIZE];
     cache_entry_t cache_entry;
-    request_node_t *request;
+    request_node_t request;
     struct stat st; /*declare stat variable*/
     long int size;
     int bytesread;
@@ -356,6 +357,7 @@ void * worker(void *args){
     }
 
       request = dequeue(worker_args->request_queue);
+
       pthread_mutex_unlock(&deq_mtx);
 /*
     if((request = dequeue(worker_args->request_queue)) == NULL){
@@ -367,9 +369,9 @@ void * worker(void *args){
 
     //make this a function
 
-    request->filename ++ ;
+    request.filename ++ ;
 
-    if(stat(request->filename,&st)==0){
+    if(stat(request.filename,&st)==0){
           size = st.st_size;
     }
     else{
@@ -378,10 +380,10 @@ void * worker(void *args){
     char * content_buffer = (char *) calloc(1, size);
 
 
-    if((index = getCacheIndex(request->filename,worker_args->cache,worker_args->cache_size)) == -1) {  //if request in not in cache then readfrom disk and add to cache
-      if((readFromDisk(content_buffer,request->fd,request->filename,size))!=NULL){
+    if((index = getCacheIndex(request.filename,worker_args->cache,worker_args->cache_size)) == -1) {  //if request in not in cache then readfrom disk and add to cache
+      if((readFromDisk(content_buffer,request.fd,request.filename,size))!=NULL){
 
-        index = addIntoCache(worker_args->cache,request->fd,request->filename,sizeof(content_buffer),content_buffer,content_type,worker_args->cache_size);
+        index = addIntoCache(worker_args->cache,request.fd,request.filename,sizeof(content_buffer),content_buffer,content_type,worker_args->cache_size);
         cache_entry = worker_args->cache[index];
         hit_or_miss = 0;
 
@@ -405,7 +407,8 @@ void * worker(void *args){
 
       // Log the request into the file and terminal
     //chanhe filename to content type
-  	if((return_result(request->fd,request->filename,readFromDisk(content_buffer,request->fd,request->filename,size),size))!=0){
+
+  	if((return_result(request.fd,request.filename,readFromDisk(content_buffer,request.fd,request.filename,size),size))!=0){
   		return_error(cache_entry.fd, "error text");
   	}
 
@@ -425,8 +428,8 @@ void * worker(void *args){
   /*cache_entry.content_type is weird number so replaced with request->filename*/
   /*Time taken is negative value */
   /*Garbage values are printing after */
-  sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request->fd,request->filename,size,time_taken,hit_or_miss);
-  free(request);
+  sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request.fd,request.filename,size,time_taken,hit_or_miss);
+
 	if((write(1,buffer,sizeof(buffer)))!=0){
 		perror("Test");
 	}

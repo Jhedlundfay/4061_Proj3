@@ -1,0 +1,7 @@
+--2018-12-12 14:55:41--  http://127.0.0.1:8889/testing/image/jpg/29.jpg
+Connecting to 127.0.0.1:8889... connected.
+HTTP request sent, awaiting response... No data received.
+Retrying.
+
+--2018-12-12 22:12:05--  (try: 2)  http://127.0.0.1:8889/testing/image/jpg/29.jpg
+Connecting to 127.0.0.1:8889... failed: Connection refused.

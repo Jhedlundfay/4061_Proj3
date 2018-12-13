@@ -1,0 +1,235 @@
+[1415997184][1][4][image/jpg/25.jpg][17772][19919264.000000ms][MISS]
+[1415997184][2][0][][0][5.000000ms][HIT]
+[1407604480][1][5][image/jpg/26.jpg][17772][28376610.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1407604480][2][0][][0][6.000000ms][HIT]
+[1459672832][1][4][image/jpg/26.jpg][17772][14073594.000000ms][MISS]
+[1459672832][2][0][][0][5.000000ms][HIT]
+[1451280128][1][5][image/jpg/26.jpg][17772][31731072.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1451280128][2][0][][0][11.000000ms][HIT]
+[1442887424][1][7][image/jpg/8.txt][0][106561432.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1442887424][2][0][][0][13.000000ms][HIT]
+[1434494720][1][9][image/jpg/8.txt][0][126593685.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1434494720][2][0][][0][15.000000ms][HIT]
+[1426102016][1][10][image/jpg/8.txt][0][146533784.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1426102016][2][0][][0][9.000000ms][HIT]
+[1417709312][1][11][image/jpg/8.html][0][170066003.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1417709312][2][0][][0][7.000000ms][HIT]
+[1409316608][1][12][image/jpg/8.gif][0][214414219.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1409316608][2][0][][0][4.000000ms][HIT]
+[1400923904][1][13][image/jpg/8.gif][0][219378927.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[1400923904][2][0][][0][6.000000ms][HIT]
+[-1374103808][1][4][image/jpg/8.gif][0][7790238.000000ms][MISS]
+[-1374103808][2][0][][0][8.000000ms][HIT]
+[-1382496512][1][5][image/jpg/8.gif][0][20132072.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1382496512][2][0][][0][12.000000ms][HIT]
+[-1573292288][1][4][image/gif/8.gif][72507][2254140.000000ms][MISS]
+[-1573292288][2][0][][0][5.000000ms][HIT]
+[-1581684992][1][5][image/jpg/8.jpg][17772][28126717.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1581684992][2][0][][0][11.000000ms][HIT]
+[-1590077696][1][7][text/plain/8.txt][139][56515919.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1590077696][2][0][][0][7.000000ms][HIT]
+[-1598470400][1][9][text/html/8.html][6280][77697709.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1598470400][2][0][][0][8.000000ms][HIT]
+[-1606863104][1][11][text/big.txt][6488666][119360393.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1606863104][2][0][][0][16.000000ms][HIT]
+[-1615255808][1][14][image/jpg/27.jpg][17772][165409123.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1615255808][2][0][][0][7.000000ms][HIT]
+[-984017152][1][4][text/big.txt][6488666][5878408.000000ms][MISS]
+[-984017152][2][0][][0][7.000000ms][HIT]
+[-992409856][1][5][text/html/8.html][6280][11278160.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-992409856][2][0][][0][5.000000ms][HIT]
+[-1000802560][1][7][text/plain/8.txt][139][19676410.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1000802560][2][0][][0][6.000000ms][HIT]
+[-1009195264][1][9][text/plain/8.txt][139][24119948.000000ms][MISS]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1009195264][2][0][][0][9.000000ms][HIT]
+[-1384257792][1][4][text/plain/8.txt][139][5290914.000000ms][HIT]
+[-1384257792][2][0][][0][10.000000ms][HIT]
+[-1392650496][1][5][text/html/8.html][6280][10611524.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1392650496][2][0][][0][6.000000ms][HIT]
+[-1401043200][1][7][text/plain/8.txt][139][17446986.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1401043200][2][0][][0][5.000000ms][HIT]
+[-1409435904][1][9][text/html/8.html][6280][126930104.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1409435904][2][0][][0][7.000000ms][HIT]
+[-1417828608][1][11][text/plain/8.txt][139][132731087.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1417828608][2][0][][0][5.000000ms][HIT]
+[-1426221312][1][14][text/plain/8.txt][139][138397161.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1426221312][2][0][][0][10.000000ms][HIT]
+[-35760384][1][4][text/plain/8.txt][139][17440048.000000ms][HIT]
+[-35760384][2][0][][0][27.000000ms][HIT]
+[-44153088][1][5][text/plain/8.txt][139][20053252.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-44153088][2][0][][0][14.000000ms][HIT]
+[-52545792][1][7][text/plain/8.txt][139][22425466.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-52545792][2][0][][0][19.000000ms][HIT]
+[-60938496][1][9][text/plain/8.txt][139][23365779.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-60938496][2][0][][0][13.000000ms][HIT]
+[-69331200][1][11][text/big.txt][6488666][27908177.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-69331200][2][0][][0][8.000000ms][HIT]
+[-77723904][1][14][text/plain/8.txt][139][30331919.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-77723904][2][0][][0][8.000000ms][HIT]
+[-86116608][1][15][image/gif/8.gif][72507][41138051.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-86116608][2][0][][0][14.000000ms][HIT]
+[107706112][1][4][][72507][9448004.000000ms][HIT]
+[107706112][2][0][][0][5.000000ms][HIT]
+[99313408][1][5][][6488666][22107563.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[99313408][2][0][][0][11.000000ms][HIT]
+[90920704][1][7][][139][34740435.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[90920704][2][0][][0][16.000000ms][HIT]
+[-1828337920][1][4][][139][3845377.000000ms][HIT]
+[-1828337920][2][0][][0][6.000000ms][HIT]
+[-1836730624][1][5][][72507][9612098.000000ms][HIT]
+HTTP/1.0 200 OK
+Content-Type: 
+Content-Length: 0
+Connection: Close
+
+[-1836730624][2][0][][0][7.000000ms][HIT]

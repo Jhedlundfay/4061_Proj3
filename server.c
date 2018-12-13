@@ -391,11 +391,15 @@ void * worker(void *args){
         hit_or_miss = 0;
 
       }
-      else{
+      /*else{
+        cache_entry = worker_args->cache[index];
+	      hit_or_miss = 1;
+      }*/
+    }
+    else{
         cache_entry = worker_args->cache[index];
 	      hit_or_miss = 1;
       }
-    }
     pthread_mutex_unlock(&add_cache);
 
 
@@ -406,7 +410,7 @@ void * worker(void *args){
      end_time = getCurrentTimeInMicro();
 
   	//total time taken to get request and data, added by C.P.
-  	time_taken=end_time-start_time;
+  	time_taken=getCurrentTimeInMicro()-start_time;
 	  counter = counter+1;
 
       // Log the request into the file and terminal

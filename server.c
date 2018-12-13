@@ -93,6 +93,47 @@ void * dynamic_pool_size_update(void *arg) {
 
 /* ************************************ Cache Code ********************************/
 
+void free_resources(cache_entry_t *cache, request_node_t *queue, int cache_size, int queue_length){
+
+  for(int i =0; i < cache_size;i++ ){
+
+    free(cache[i].filename);
+
+    free(cache[i].content);
+
+    free(cache[i].content_type);
+
+  }
+
+  for(int i = 0; i < queue_length;i++ ){
+
+    free(queue[i].filename);
+
+  }
+
+  free(cache);
+
+  free(queue);
+
+  pthread_mutex_destroy(&acc);
+
+  pthread_mutex_destroy(&cond_mtx);
+
+  pthread_mutex_destroy(&deq_mtx);
+
+  pthread_mutex_destroy(&enq_mtx);
+
+  pthread_mutex_destroy(&add_cache);
+
+  pthread_cond_destroy(&deq);
+
+  pthread_cond_destroy(&enq);
+
+  pthread_mutex_destroy(&logging_lock);
+
+}
+
+
 void enqueue(request_node_t *queue,char *name, int descriptor, int queue_length)
 {
     if(queue_size<queue_length)
@@ -595,6 +636,7 @@ int main(int argc, char **argv) {
 
   // Clean up ---------------------------------------------------------------------
 
+ free_resources(req_cache,req_queue,cache_size,queue_length);
 
   return 0;
 }

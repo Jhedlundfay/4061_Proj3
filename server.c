@@ -72,6 +72,7 @@ pthread_mutex_t enq_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t add_cache = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t deq = PTHREAD_COND_INITIALIZER;
 pthread_cond_t enq = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t logging_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int queue_size = -1;
 int front = -1;
@@ -262,10 +263,10 @@ char* getContentType(char * mybuf) {
 }
 
 // This function returns the current time in milliseconds
-int getCurrentTimeInMills() {
+long getCurrentTimeInMicro() {
   struct timeval curr_time;
   gettimeofday(&curr_time, NULL);
-  return curr_time.tv_usec;
+  return curr_time.tv_sec * 1000000 + curr_time.tv_usec;
 }
 
 /**********************************************************************************/
@@ -330,7 +331,7 @@ void * worker(void *args){
   warg_t *worker_args = args;
   while (1) {
 
-    time_t start_time, end_time;
+    long start_time, end_time;
     double time_taken;
 
     char content_type[BUFF_SIZE];
@@ -345,9 +346,11 @@ void * worker(void *args){
     char * log_string;
 
     //Start recording time, added by C.P.
-    if((start_time=time(NULL))==((time_t)-1)){
+    /*if((start_time=time(NULL))==((time_t)-1)){
       start_time=-1;
-    }
+    }*/
+
+   start_time = getCurrentTimeInMicro();
     pthread_mutex_lock(&deq_mtx);
 
 
@@ -397,12 +400,13 @@ void * worker(void *args){
 
 
     // Stop recording the time, added by C.P.
-  	if((end_time=time(NULL))==((time_t)-1)){
+  	/*if((end_time=time(NULL))==((time_t)-1)){
   		end_time=-1;
-  	}
+  	}*/
+     end_time = getCurrentTimeInMicro();
 
   	//total time taken to get request and data, added by C.P.
-  	time_taken=difftime(start_time,end_time);
+  	time_taken=end_time-start_time;
 	  counter = counter+1;
 
       // Log the request into the file and terminal
@@ -423,18 +427,42 @@ void * worker(void *args){
 
 
 
-	char buffer[BUFF_SIZE];
+	//char buffer[BUFF_SIZE];
   /*thread id is a weird number */
   /*cache_entry.content_type is weird number so replaced with request->filename*/
   /*Time taken is negative value */
   /*Garbage values are printing after */
-  sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request.fd,request.filename,size,time_taken,hit_or_miss);
+
+pthread_mutex_lock(&logging_lock); 
+
+  char buffer[BUFF_SIZE];
+  int log_fd;
+  if((log_fd=open("server_log", O_WRONLY | O_APPEND | O_CREAT, 0666))==-1){
+	perror("Error opening server_log file");
+	return NULL;
+  }
+  if(hit_or_miss == 1){
+ 	 sprintf(buffer,"[%d][%d][%d][%s][%ld][%lfms][%s]\n", threadID,counter,request.fd,request.filename,size,time_taken,"HIT");
+  }
+  else{
+	sprintf(buffer,"[%d][%d][%d][%s][%ld][%lfms][%s]\n", threadID,counter,request.fd,request.filename,size,time_taken,"MISS");
+  }
+  if((write(1,buffer,strlen(buffer)))<=0){ // Debugging 
+	perror("Logging Error");
+  }
+  if((write(log_fd,buffer,strlen(buffer)))<=0){
+	perror("Logging Error");
+  }
+  pthread_mutex_unlock(&logging_lock);
+
+  }
+  /*sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request.fd,request.filename,size,time_taken,hit_or_miss);
 
 	if((write(1,buffer,sizeof(buffer)))!=0){
 		perror("Test");
-	}
+	}*/
 
-  }
+  
   return NULL;
 }
 

@@ -32,14 +32,11 @@ typedef struct request_node
 {
     int fd;
     char *filename;
-    struct request_node *next;
 } request_node_t;
 
 typedef struct request_queue
 {
-    int count;
-    request_node_t *head;
-    request_node_t *tail;
+    request_node_t *node;
 } request_queue_t;
 
 typedef struct cache_entry {
@@ -52,13 +49,13 @@ typedef struct cache_entry {
 } cache_entry_t;
 
 typedef struct worker_args {
-  request_queue_t *request_queue;
+  request_node_t *request_queue;
   cache_entry_t * cache;
   int cache_size;
 } warg_t;
 
 typedef struct dispatch_args {
-  request_queue_t *request_queue;
+  request_node_t *request_queue;
   int queue_length;
 } darg_t;
 
@@ -76,6 +73,9 @@ pthread_mutex_t add_cache = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t deq = PTHREAD_COND_INITIALIZER;
 pthread_cond_t enq = PTHREAD_COND_INITIALIZER;
 
+int queue_size = -1;
+int front = -1;
+int rear = -1;
 
 /* ************************ Dynamic Pool Code ***********************************/
 // Extra Credit: This function implements the policy to change the worker thread pool dynamically
@@ -92,33 +92,51 @@ void * dynamic_pool_size_update(void *arg) {
 
 /* ************************************ Cache Code ********************************/
 
-void enqueue(request_queue_t *q,char *name, int descriptor)
+void enqueue(request_node_t *queue,char *name, int descriptor, int queue_length)
 {
-    request_node_t *tmp;
-    tmp = (request_node_t *) calloc(1, sizeof(request_node_t));
-    tmp->fd = descriptor;
-    tmp->filename = name;
-    tmp->next = NULL;
-    if(q->tail != NULL)
+    if(queue_size<queue_length)
     {
-        q->tail->next = tmp;
-        q->tail = tmp;
+        if(queue_size<0)
+        {
+            queue[0].filename = name;
+            queue[0].fd = descriptor;
+            front = rear = 0;
+            queue_size= 1;
+        }
+        else if(rear == queue_length-1)
+        {
+            queue[0].filename = name;
+            queue[0].fd = descriptor;
+            rear = 0;
+            queue_size ++;
+        }
+        else
+        {
+            queue[0].filename = name;
+            queue[0].fd = descriptor;
+            rear++;
+            queue_size++;
+        }
     }
     else
     {
-        q->head = q->tail = tmp;
+        printf("Queue is full\n");
     }
-    q->count++;
 }
 
-request_node_t *dequeue(request_queue_t *q)
+request_node_t dequeue(request_node_t *q)
 {
-    request_node_t *tmp;
-    int n = q->head->fd;
-    tmp = q->head;
-    q->head = q->head->next;
-    q->count--;
-    return tmp;
+    if(queue_size<0)
+    {
+        printf("Queue is empty\n");
+        return NULL;
+    }
+    else
+    {
+        queue_size--;
+        front++;
+        return q[front-1];
+    }
 }
 
 
@@ -170,11 +188,13 @@ void deleteCache(cache_entry_t *cache, int cache_size){
 }
 
 // Function to initialize the cache
-void initQueue(request_queue_t *q)
+void initQueue(request_node_t *q,int size)
 {
-    q->count = 0;
-    q->head = NULL;
-    q->tail = NULL;
+    for(int i = 0; i < size;i++){
+        q[i].fd = 0;
+        q[i].filename = (char *) calloc(1, sizeof(BUFF_SIZE));
+
+    }
 }
 
 void initCache(cache_entry_t *cache,int cache_size){
@@ -276,16 +296,15 @@ void * dispatch(void *args) {
    else{
         printf("get_request() succesfully ran. Filename is == %s \n",filename);
         pthread_mutex_lock(&enq_mtx);
-        if(dispatcher_args->request_queue->count < dispatcher_args->queue_length){   //check if queue is full
-            enqueue(dispatcher_args->request_queue,filename,connection_fd);
+        if(queue_size < dispatcher_args-> queue_length){   //check if queue is full
+            enqueue(dispatcher_args->request_queue,filename,connection_fd,dispatcher_args->queue_length);
             pthread_cond_signal(&enq);
-            printf("Dispacther-->request has been added to the queue. Filename is = %s \n",dispatcher_args->request_queue->head->filename);
           }
         else{
-           while(dispatcher_args->request_queue->count < dispatcher_args->queue_length){
+           while(queue_size < dispatcher_args->queue_length){
             pthread_cond_wait(&deq,&enq_mtx);
           }
-            enqueue(dispatcher_args->request_queue,filename,connection_fd);
+            enqueue(dispatcher_args->request_queue,filename,connection_fd,dispatcher_args->queue_length);
             pthread_cond_signal(&enq);
             }
          pthread_mutex_unlock(&enq_mtx);
@@ -332,11 +351,11 @@ void * worker(void *args){
 
 
     // Get a request from the queue. Continue to next itertation if no requests are in the queue
-    while(worker_args->request_queue->count == 0) {
+    while(queue_size < 0) {
       pthread_cond_wait(&enq,&deq_mtx);
     }
+
       request = dequeue(worker_args->request_queue);
-      printf("Worker dequed request filename == %s\n",request->filename);
       pthread_mutex_unlock(&deq_mtx);
 /*
     if((request = dequeue(worker_args->request_queue)) == NULL){
@@ -407,7 +426,7 @@ void * worker(void *args){
   /*Time taken is negative value */
   /*Garbage values are printing after */
   sprintf(buffer,"[%d][%d][%d][%s][%ld][%lf][%d]", threadID,counter,request->fd,request->filename,size,time_taken,hit_or_miss);
-
+  free(request);
 	if((write(1,buffer,sizeof(buffer)))!=0){
 		perror("Test");
 	}
@@ -479,9 +498,10 @@ int main(int argc, char **argv) {
   initCache(req_cache,cache_size);
 
   // initialize queue
-  request_queue_t *req_queue;
-  req_queue = (request_queue_t *) calloc(1, sizeof(request_queue_t));
-  initQueue(req_queue);
+  request_node_t * req_queue;
+  req_queue = (request_node_t *) calloc(1, queue_length*sizeof(request_node_t));
+  initQueue(req_queue,queue_length);
+
 
 
   // setting up the threads -------------------------------------------------------

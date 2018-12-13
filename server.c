@@ -95,7 +95,7 @@ void * dynamic_pool_size_update(void *arg) {
 void enqueue(request_queue_t *q,char *name, int descriptor)
 {
     request_node_t *tmp;
-    tmp = malloc(sizeof(request_node_t));
+    tmp = (request_node_t *) calloc(1, sizeof(request_node_t));
     tmp->fd = descriptor;
     tmp->filename = name;
     tmp->next = NULL;
@@ -185,9 +185,9 @@ void initCache(cache_entry_t *cache,int cache_size){
   for(int i = 0; i < cache_size; i++){
 
     cache[i].bytes  = -1;
-    cache[i].filename = malloc(sizeof(BUFF_SIZE));
-    cache[i].content = malloc(sizeof(BUFF_SIZE));
-    cache[i].content_type = malloc(sizeof(BUFF_SIZE));
+    cache[i].filename = (char *) calloc(1, sizeof(BUFF_SIZE));
+    cache[i].content = (char *) calloc(1, sizeof(BUFF_SIZE));
+    cache[i].content_type = (char *) calloc(1, sizeof(BUFF_SIZE));
     cache[i].status = -1;
   }
 
@@ -198,7 +198,7 @@ void initCache(cache_entry_t *cache,int cache_size){
 // Add necessary arguments as needed
 char *readFromDisk(char *content_buffer,int fd,char *filename, long int size) {
     int file_desc = open(filename,O_RDONLY);
-    char *filecontents = (char *) malloc(size);
+    char *filecontents = (char *) calloc(1, size);
     if(file_desc >= 0){
       if(read(file_desc,filecontents,size) >= 0){
         return filecontents;
@@ -356,7 +356,7 @@ void * worker(void *args){
     else{
           size = 0;
     }
-    char * content_buffer = (char *) malloc(size);
+    char * content_buffer = (char *) calloc(1, size);
 
 
     if((index = getCacheIndex(request->filename,worker_args->cache,worker_args->cache_size)) == -1) {  //if request in not in cache then readfrom disk and add to cache
@@ -475,12 +475,12 @@ int main(int argc, char **argv) {
 
   init(port);
   cache_entry_t * req_cache;
-  req_cache = malloc(cache_size*sizeof(cache_entry_t));
+  req_cache = (cache_entry_t *) calloc(1, cache_size*sizeof(cache_entry_t));
   initCache(req_cache,cache_size);
 
   // initialize queue
   request_queue_t *req_queue;
-  req_queue = malloc(sizeof(request_queue_t));
+  req_queue = (request_queue_t *) calloc(1, sizeof(request_queue_t));
   initQueue(req_queue);
 
 
